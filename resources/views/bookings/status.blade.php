@@ -141,16 +141,18 @@
                                                 </span>
                                             </td>
                                             <td>
-                                                <div style="display: flex; gap: 10px;">
-                                                    <form method="POST" action="{{ route('bookings.checkout', $booking->booking_id) }}" style="display: inline;">
+                                                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                                    <a href="{{ route('bookings.show', $booking->booking_id) }}" class="btn-info" style="display: inline-block; padding: 6px 10px; font-size: 10px; background: #17a2b8; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; text-decoration: none;">VIEW</a>
+                                                    <a href="{{ route('bookings.edit', $booking->booking_id) }}" class="btn-warning" style="display: inline-block; padding: 6px 10px; font-size: 10px; background: #ffc107; color: #333; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; text-decoration: none;">EDIT</a>
+                                                    <form method="POST" action="{{ route('bookings.checkin', $booking->booking_id) }}" style="display: inline;">
                                                         @csrf
                                                         @method('PATCH')
-                                                        <button type="submit" class="btn-primary" onclick="return confirm('Are you sure you want to check out this guest?')" style="padding: 8px 12px; font-size: 11px;">CHECK OUT</button>
+                                                        <button type="submit" class="btn-primary" onclick="return confirm('Are you sure you want to check in this guest?')" style="padding: 6px 10px; font-size: 10px;">CHECK IN</button>
                                                     </form>
                                                     <form method="POST" action="{{ route('bookings.destroy', $booking->booking_id) }}" style="display: inline;">
                                                         @csrf
                                                         @method('DELETE')
-                                                        <button type="submit" class="btn-danger" onclick="return confirm('Are you sure you want to cancel this booking?')" style="padding: 8px 12px; font-size: 11px; background: #dc3545; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">CANCEL</button>
+                                                        <button type="submit" class="btn-danger" onclick="return confirm('Are you sure you want to cancel this booking?')" style="padding: 6px 10px; font-size: 10px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">CANCEL</button>
                                                     </form>
                                                 </div>
                                             </td>
@@ -158,8 +160,8 @@
                                     @endforeach
                                 </tbody>
                             </table>
-                        @elseif($status === 'Completed')
-                            {{-- Completed Bookings Table without Action Column --}}
+                        @elseif($status === 'Checked-In')
+                            {{-- Checked-In Bookings Table with Action Column --}}
                             <table class="guest-table">
                                 <thead>
                                     <tr>
@@ -171,6 +173,56 @@
                                         <th>AMOUNT</th>
                                         <th>STAFF</th>
                                         <th>STATUS</th>
+                                        <th>ACTION</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($statusBookings as $booking)
+                                        @php
+                                            $statusBadgeClass = 'checked-in';
+                                        @endphp
+                                        <tr>
+                                            <td>{{ $booking->room_id }}</td>
+                                            <td><strong>{{ $booking->guest_name }}</strong></td>
+                                            <td>{{ $booking->room->room_type ?? 'N/A' }}</td>
+                                            <td>{{ \Carbon\Carbon::parse($booking->check_in_date)->format('M d, Y') }}</td>
+                                            <td>{{ \Carbon\Carbon::parse($booking->check_out_date)->format('M d, Y') }}</td>
+                                            <td>₱ {{ number_format($booking->total_amount ?? 0, 0) }}</td>
+                                            <td>{{ $booking->account->first_name ?? 'N/A' }} {{ $booking->account->last_name ?? '' }}</td>
+                                            <td>
+                                                <span style="padding: 6px 12px; border-radius: 4px; font-size: 12px; font-weight: 600; background: #d1ecf1; color: #0c5460;">
+                                                    {{ ucfirst($booking->status) }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                                    <a href="{{ route('bookings.show', $booking->booking_id) }}" class="btn-info" style="display: inline-block; padding: 6px 10px; font-size: 10px; background: #17a2b8; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; text-decoration: none;">VIEW</a>
+                                                    <a href="{{ route('bookings.edit', $booking->booking_id) }}" class="btn-warning" style="display: inline-block; padding: 6px 10px; font-size: 10px; background: #ffc107; color: #333; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; text-decoration: none;">EDIT</a>
+                                                    <form method="POST" action="{{ route('bookings.checkout', $booking->booking_id) }}" style="display: inline;">
+                                                        @csrf
+                                                        @method('PATCH')
+                                                        <button type="submit" class="btn-primary" onclick="return confirm('Are you sure you want to check out this guest?')" style="padding: 6px 10px; font-size: 10px;">CHECK OUT</button>
+                                                    </form>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        @elseif($status === 'Completed')
+                            {{-- Completed Bookings Table with Action Column --}}
+                            <table class="guest-table">
+                                <thead>
+                                    <tr>
+                                        <th>ROOM ID</th>
+                                        <th>GUEST NAME</th>
+                                        <th>ROOM</th>
+                                        <th>CHECK IN</th>
+                                        <th>CHECK OUT</th>
+                                        <th>AMOUNT</th>
+                                        <th>STAFF</th>
+                                        <th>STATUS</th>
+                                        <th>ACTION</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -191,12 +243,17 @@
                                                     {{ ucfirst($booking->status) }}
                                                 </span>
                                             </td>
+                                            <td>
+                                                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                                    <a href="{{ route('bookings.show', $booking->booking_id) }}" class="btn-info" style="display: inline-block; padding: 6px 10px; font-size: 10px; background: #17a2b8; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; text-decoration: none;">VIEW</a>
+                                                </div>
+                                            </td>
                                         </tr>
                                     @endforeach
                                 </tbody>
                             </table>
                         @elseif($status === 'Cancelled')
-                            {{-- Cancelled Bookings Table without Action Column --}}
+                            {{-- Cancelled Bookings Table with Action Column --}}
                             <table class="guest-table">
                                 <thead>
                                     <tr>
@@ -208,6 +265,7 @@
                                         <th>AMOUNT</th>
                                         <th>STAFF</th>
                                         <th>STATUS</th>
+                                        <th>ACTION</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -227,6 +285,11 @@
                                                 <span style="padding: 6px 12px; border-radius: 4px; font-size: 12px; font-weight: 600; background: #f8d7da; color: #721c24;">
                                                     {{ ucfirst($booking->status) }}
                                                 </span>
+                                            </td>
+                                            <td>
+                                                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                                    <a href="{{ route('bookings.show', $booking->booking_id) }}" class="btn-info" style="display: inline-block; padding: 6px 10px; font-size: 10px; background: #17a2b8; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; text-decoration: none;">VIEW</a>
+                                                </div>
                                             </td>
                                         </tr>
                                     @endforeach

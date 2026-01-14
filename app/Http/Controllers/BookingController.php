@@ -111,7 +111,24 @@ class BookingController extends Controller
         $booking = Booking::findOrFail($id);
         $rooms = Room::all();
         $accounts = Account::all();
-        return view('bookings.edit', compact('booking', 'rooms', 'accounts'));
+        
+        // Get all booked dates for calendar display (excluding current booking's dates)
+        $allBookings = Booking::where('status', 'Booked')
+                              ->where('booking_id', '!=', $id)
+                              ->get();
+        
+        $allBookingDates = [];
+        foreach ($allBookings as $b) {
+            $start = Carbon::parse($b->check_in_date);
+            $end = Carbon::parse($b->check_out_date);
+            
+            while ($start->lte($end)) {
+                $allBookingDates[] = $start->toDateString();
+                $start->addDay();
+            }
+        }
+        
+        return view('bookings.edit', compact('booking', 'rooms', 'accounts', 'allBookingDates'));
     }
 
     /**

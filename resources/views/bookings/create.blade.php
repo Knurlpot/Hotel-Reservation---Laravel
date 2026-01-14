@@ -69,8 +69,12 @@
                                             $dateStr = $year . '-' . str_pad($month, 2, '0', STR_PAD_LEFT) . '-' . str_pad($dayCounter, 2, '0', STR_PAD_LEFT);
                                             $isToday = $dayCounter == $today->day;
                                             $isBooked = in_array($dateStr, $bookedDates ?? []);
+                                            $currentDate = \Carbon\Carbon::createFromDate($year, $month, $dayCounter);
+                                            $isPast = $currentDate->isBefore($today);
                                         @endphp
-                                        @if ($isToday)
+                                        @if ($isPast)
+                                            <td style="padding: 8px; text-align: center; height: 40px; border-radius: 4px; background: #f5f5f5; color: #999; text-decoration: line-through; cursor: not-allowed;" data-past="true">{{ $dayCounter }}</td>
+                                        @elseif ($isToday)
                                             <td style="padding: 8px; text-align: center; height: 40px; border-radius: 4px; background: #e8f1ff; color: #3ba0ff; font-weight: 700; border: 2px solid #3ba0ff; cursor: pointer;" class="calendar-cell" data-date="{{ $dateStr }}">{{ $dayCounter }}</td>
                                         @elseif ($isBooked)
                                             <td style="padding: 8px; text-align: center; height: 40px; border-radius: 4px; background: #f5f5f5; color: #999; text-decoration: line-through; cursor: not-allowed;" data-booked="true">{{ $dayCounter }}</td>
@@ -204,6 +208,14 @@ document.addEventListener('DOMContentLoaded', function() {
     bookedDates.forEach(cell => {
         cell.addEventListener('mouseover', function() {
             this.title = 'This date is already booked';
+        });
+    });
+
+    // Add event listeners to past dates to show tooltip/message
+    const pastDates = document.querySelectorAll('[data-past="true"]');
+    pastDates.forEach(cell => {
+        cell.addEventListener('mouseover', function() {
+            this.title = 'This date has already passed';
         });
     });
     
