@@ -34,15 +34,21 @@
             </tr>
         </thead>
         <tbody>
-            @forelse($bookings as $booking)
+            @forelse($reservations as $booking)
                 <tr>
                     <td>{{ $booking->booking_id }}</td>
-                    <td><strong>{{ $booking->guest->first_name ?? 'N/A' }} {{ $booking->guest->last_name ?? '' }}</strong></td>
+                    <td><strong>{{ $booking->guest_name }}</strong></td>
                     <td>{{ $booking->room->room_type ?? 'N/A' }}</td>
-                    <td>{{ optional($booking->check_in_date)->format('M d, Y') }}</td>
-                    <td>{{ optional($booking->check_out_date)->format('M d, Y') }}</td>
-                    <td>₱ {{ number_format($booking->payment->amount ?? 0, 0) }}</td>
-                    <td><button class="btn-primary">CHECK IN</button></td>
+                    <td>{{ \Carbon\Carbon::parse($booking->check_in_date)->format('M d, Y') }}</td>
+                    <td>{{ \Carbon\Carbon::parse($booking->check_out_date)->format('M d, Y') }}</td>
+                    <td>₱{{ number_format($booking->total_amount ?? 0, 0) }}</td>
+                    <td>
+                        <form action="{{ route('bookings.checkin', $booking->booking_id) }}" method="POST" style="display: inline;">
+                            @csrf
+                            @method('PATCH')
+                            <button type="submit" class="btn-primary">CHECK IN</button>
+                        </form>
+                    </td>
                 </tr>
             @empty
                 <tr>
@@ -73,14 +79,14 @@
             </tr>
         </thead>
         <tbody>
-            @forelse($bookings as $booking)
+            @forelse($checkouts as $booking)
                 <tr>
                     <td>{{ $booking->booking_id }}</td>
-                    <td><strong>{{ $booking->guest->first_name ?? 'N/A' }} {{ $booking->guest->last_name ?? '' }}</strong></td>
+                    <td><strong>{{ $booking->guest_name }}</strong></td>
                     <td>{{ $booking->room->room_type ?? 'N/A' }}</td>
-                    <td>{{ optional($booking->check_in_date)->format('M d, Y') }}</td>
-                    <td>{{ optional($booking->check_out_date)->format('M d, Y') }}</td>
-                    <td>₱ {{ number_format($booking->payment->amount ?? 0, 0) }}</td>
+                    <td>{{ \Carbon\Carbon::parse($booking->check_in_date)->format('M d, Y') }}</td>
+                    <td>{{ \Carbon\Carbon::parse($booking->check_out_date)->format('M d, Y') }}</td>
+                    <td>₱{{ number_format($booking->total_amount ?? 0, 0) }}</td>
                     <td><button class="btn-primary">CHECK OUT</button></td>
                 </tr>
             @empty

@@ -69,7 +69,7 @@
                         <td>{{ $guest->room->room_type }}</td>
                         <td>{{ \Carbon\Carbon::parse($guest->check_in_date)->format('M d, Y') }}</td>
                         <td>{{ \Carbon\Carbon::parse($guest->check_out_date)->format('M d, Y') }}</td>
-                        <td>₱ {{ number_format($guest->room->price, 0) }}</td>
+                        <td>₱ {{ number_format($guest->total_amount, 0) }}</td>
                     </tr>
                 @endforeach
             @else

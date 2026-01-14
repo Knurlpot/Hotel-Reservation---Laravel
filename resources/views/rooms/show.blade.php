@@ -18,8 +18,6 @@
 
             <p class="price">₱ {{ number_format($room->price, 0) }} <span>/ night</span></p>
             <p class="price-note"><em>*excluding taxes</em></p>
-
-            <button class="btn-primary" onclick="openCheckout('{{ $room->room_id }}', '{{ $room->room_type }}', {{ $room->price }}, {{ json_encode($bookedDates) }})">Book Now</button>
         </div>
 
         {{-- RIGHT IMAGES --}}

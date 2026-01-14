@@ -26,9 +26,73 @@
         </div>
     @endif
 
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: start;">
+    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 40px;">
+        {{-- Calendar Section --}}
+        <div>
+            <h3 style="font-size: 16px; font-weight: 600; color: #333; margin-bottom: 15px;">Select Dates</h3>
+            <div style="border: 1px solid #ddd; border-radius: 6px; padding: 15px; background: #f9f9f9;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <button type="button" onclick="previousMonth()" style="background: none; border: none; cursor: pointer; font-size: 18px; padding: 5px 10px; color: #3ba0ff; font-weight: 700;">&lt;</button>
+                    <span id="monthYear" style="font-weight: 600; font-size: 14px;">January 2026</span>
+                    <button type="button" onclick="nextMonth()" style="background: none; border: none; cursor: pointer; font-size: 18px; padding: 5px 10px; color: #3ba0ff; font-weight: 700;">&gt;</button>
+                </div>
+
+                <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                    <thead>
+                        <tr>
+                            <th style="padding: 10px 5px; text-align: center; font-weight: 600; color: #666; border-bottom: 1px solid #e5e7eb;">Sun</th>
+                            <th style="padding: 10px 5px; text-align: center; font-weight: 600; color: #666; border-bottom: 1px solid #e5e7eb;">Mon</th>
+                            <th style="padding: 10px 5px; text-align: center; font-weight: 600; color: #666; border-bottom: 1px solid #e5e7eb;">Tue</th>
+                            <th style="padding: 10px 5px; text-align: center; font-weight: 600; color: #666; border-bottom: 1px solid #e5e7eb;">Wed</th>
+                            <th style="padding: 10px 5px; text-align: center; font-weight: 600; color: #666; border-bottom: 1px solid #e5e7eb;">Thu</th>
+                            <th style="padding: 10px 5px; text-align: center; font-weight: 600; color: #666; border-bottom: 1px solid #e5e7eb;">Fri</th>
+                            <th style="padding: 10px 5px; text-align: center; font-weight: 600; color: #666; border-bottom: 1px solid #e5e7eb;">Sat</th>
+                        </tr>
+                    </thead>
+                    <tbody id="calendarDays">
+                        @php
+                            $today = \Carbon\Carbon::now();
+                            $year = $today->year;
+                            $month = $today->month;
+                            $firstDay = \Carbon\Carbon::createFromDate($year, $month, 1)->dayOfWeek;
+                            $daysInMonth = cal_days_in_month(CAL_GREGORIAN, $month, $year);
+                            $dayCounter = 0;
+                        @endphp
+                        @for ($week = 0; $week < 6; $week++)
+                            <tr>
+                                @for ($dayOfWeek = 0; $dayOfWeek < 7; $dayOfWeek++)
+                                    @if ($week === 0 && $dayOfWeek < $firstDay)
+                                        <td style="padding: 8px; text-align: center; height: 40px;"></td>
+                                    @elseif ($dayCounter < $daysInMonth)
+                                        @php
+                                            $dayCounter++;
+                                            $dateStr = $year . '-' . str_pad($month, 2, '0', STR_PAD_LEFT) . '-' . str_pad($dayCounter, 2, '0', STR_PAD_LEFT);
+                                            $isToday = $dayCounter == $today->day;
+                                            $isBooked = in_array($dateStr, $bookedDates ?? []);
+                                        @endphp
+                                        @if ($isToday)
+                                            <td style="padding: 8px; text-align: center; height: 40px; border-radius: 4px; background: #e8f1ff; color: #3ba0ff; font-weight: 700; border: 2px solid #3ba0ff; cursor: pointer;" class="calendar-cell" data-date="{{ $dateStr }}">{{ $dayCounter }}</td>
+                                        @elseif ($isBooked)
+                                            <td style="padding: 8px; text-align: center; height: 40px; border-radius: 4px; background: #f5f5f5; color: #999; text-decoration: line-through; cursor: not-allowed;" data-booked="true">{{ $dayCounter }}</td>
+                                        @else
+                                            <td style="padding: 8px; text-align: center; height: 40px; border-radius: 4px; background: #fff; color: #333; cursor: pointer;" class="calendar-cell" data-date="{{ $dateStr }}">{{ $dayCounter }}</td>
+                                        @endif
+                                    @else
+                                        <td style="padding: 8px; text-align: center; height: 40px;"></td>
+                                    @endif
+                                @endfor
+                            </tr>
+                            @if ($dayCounter >= $daysInMonth)
+                                @break
+                            @endif
+                        @endfor
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
         {{-- Form Section --}}
-        <form action="{{ route('bookings.store') }}" method="POST">
+        <form action="{{ route('bookings.store') }}" method="POST" style="display: flex; flex-direction: column;">
             @csrf
             
             <div style="margin-bottom: 25px;">
@@ -64,14 +128,20 @@
                 <input type="text" name="guest_name" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;" placeholder="John Doe" required>
             </div>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 25px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px;">
                 <div>
                     <label style="display: block; font-weight: 600; color: #333; margin-bottom: 8px;">Check-in Date</label>
-                    <input type="date" name="check_in_date" id="checkInDate" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;" required onchange="calculateTotal()">
+                    <div id="checkInDateDisplay" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; background: #f9f9f9; color: #999; min-height: 20px;">
+                        Select from calendar
+                    </div>
+                    <input type="hidden" name="check_in_date" id="checkInDate">
                 </div>
                 <div>
                     <label style="display: block; font-weight: 600; color: #333; margin-bottom: 8px;">Check-out Date</label>
-                    <input type="date" name="check_out_date" id="checkOutDate" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;" required onchange="calculateTotal()">
+                    <div id="checkOutDateDisplay" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; background: #f9f9f9; color: #999; min-height: 20px;">
+                        Select from calendar
+                    </div>
+                    <input type="hidden" name="check_out_date" id="checkOutDate">
                 </div>
             </div>
 
@@ -86,7 +156,7 @@
 
             <input type="hidden" name="account_id" value="{{ auth()->user()->account_id }}">
 
-            <div style="display: flex; gap: 15px; margin-top: 30px;">
+            <div style="display: flex; gap: 15px; margin-top: auto;">
                 <button type="submit" class="btn-primary">Confirm Booking</button>
                 <a href="{{ route('bookings.status') }}" style="background: #6c757d; color: #fff; padding: 10px 18px; border-radius: 6px; border: none; font-size: 12px; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-block; transition: background 0.3s ease;" onmouseover="this.style.background='#5a6268'" onmouseout="this.style.background='#6c757d'">Back to Bookings</a>
             </div>
@@ -94,8 +164,9 @@
 
         {{-- Room Image Section --}}
         <div>
-            <img id="roomImage" src="{{ asset('images/single.jpg') }}" alt="Room" style="width: 100%; height: 400px; border-radius: 12px; object-fit: cover;">
-            <p id="roomInfo" style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 6px; text-align: center; font-size: 14px; color: #666;">
+            <h3 style="font-size: 16px; font-weight: 600; color: #333; margin-bottom: 15px;">Room Preview</h3>
+            <img id="roomImage" src="{{ asset('images/single.jpg') }}" alt="Room" style="width: 100%; height: 300px; border-radius: 12px; object-fit: cover; margin-bottom: 15px;">
+            <p id="roomInfo" style="padding: 15px; background: #f8f9fa; border-radius: 6px; text-align: center; font-size: 14px; color: #666;">
                 Select a room to view details
             </p>
         </div>
@@ -103,17 +174,132 @@
 </section>
 
 <script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add click handlers to calendar cells
+    const cells = document.querySelectorAll('.calendar-cell');
+    cells.forEach(cell => {
+        cell.addEventListener('click', function() {
+            const dateStr = this.getAttribute('data-date');
+            if (dateStr) {
+                selectDate(dateStr);
+            }
+        });
+        
+        cell.addEventListener('mouseover', function() {
+            this.style.background = '#f0f8ff';
+            this.style.fontWeight = '600';
+        });
+        
+        cell.addEventListener('mouseout', function() {
+            const dateStr = this.getAttribute('data-date');
+            if (dateStr) {
+                this.style.background = '#fff';
+                this.style.fontWeight = '400';
+            }
+        });
+    });
+    
+    // Add event listeners to booked dates to show tooltip/message
+    const bookedDates = document.querySelectorAll('[data-booked="true"]');
+    bookedDates.forEach(cell => {
+        cell.addEventListener('mouseover', function() {
+            this.title = 'This date is already booked';
+        });
+    });
+    
+    updateRoomImage();
+});
+
+function selectDate(dateStr) {
+    const checkInDate = document.getElementById('checkInDate').value;
+    const checkOutDate = document.getElementById('checkOutDate').value;
+    const checkInDisplay = document.getElementById('checkInDateDisplay');
+    const checkOutDisplay = document.getElementById('checkOutDateDisplay');
+    
+    const dateObj = new Date(dateStr + 'T00:00:00');
+    const dateFormatted = dateObj.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    
+    if (!checkInDate) {
+        document.getElementById('checkInDate').value = dateStr;
+        checkInDisplay.textContent = dateFormatted;
+        checkInDisplay.style.color = '#333';
+    } else if (checkInDate && !checkOutDate) {
+        const checkIn = new Date(checkInDate + 'T00:00:00');
+        const selectedDate = new Date(dateStr + 'T00:00:00');
+        
+        if (selectedDate <= checkIn) {
+            document.getElementById('checkInDate').value = dateStr;
+            document.getElementById('checkOutDate').value = '';
+            checkInDisplay.textContent = dateFormatted;
+            checkInDisplay.style.color = '#333';
+            checkOutDisplay.textContent = 'Select from calendar';
+            checkOutDisplay.style.color = '#999';
+        } else {
+            document.getElementById('checkOutDate').value = dateStr;
+            checkOutDisplay.textContent = dateFormatted;
+            checkOutDisplay.style.color = '#333';
+            calculateTotal();
+            highlightSelectedDates();
+        }
+    } else if (checkInDate && checkOutDate) {
+        document.getElementById('checkInDate').value = dateStr;
+        document.getElementById('checkOutDate').value = '';
+        checkInDisplay.textContent = dateFormatted;
+        checkInDisplay.style.color = '#333';
+        checkOutDisplay.textContent = 'Select from calendar';
+        checkOutDisplay.style.color = '#999';
+        document.getElementById('totalAmount').textContent = '0';
+        highlightSelectedDates();
+    }
+}
+
+function highlightSelectedDates() {
+    const checkInDate = document.getElementById('checkInDate').value;
+    const checkOutDate = document.getElementById('checkOutDate').value;
+    
+    // Clear previous highlights
+    const allCells = document.querySelectorAll('.calendar-cell, [data-booked="true"]');
+    allCells.forEach(cell => {
+        cell.style.background = cell.getAttribute('data-booked') === 'true' ? '#f5f5f5' : '#fff';
+    });
+    
+    // Highlight selected date range
+    if (checkInDate && checkOutDate) {
+        const checkIn = new Date(checkInDate + 'T00:00:00');
+        const checkOut = new Date(checkOutDate + 'T00:00:00');
+        
+        const cells = document.querySelectorAll('.calendar-cell');
+        cells.forEach(cell => {
+            const cellDate = new Date(cell.getAttribute('data-date') + 'T00:00:00');
+            if (cellDate >= checkIn && cellDate <= checkOut) {
+                cell.style.background = '#cce5ff';
+                cell.style.fontWeight = '600';
+                cell.style.color = '#0066cc';
+            }
+        });
+    } else if (checkInDate && !checkOutDate) {
+        // Highlight only check-in date
+        const cells = document.querySelectorAll('.calendar-cell');
+        cells.forEach(cell => {
+            const cellDate = cell.getAttribute('data-date');
+            if (cellDate === checkInDate) {
+                cell.style.background = '#e8f1ff';
+                cell.style.fontWeight = '700';
+                cell.style.color = '#3ba0ff';
+                cell.style.border = '2px solid #3ba0ff';
+            }
+        });
+    }
+}
+
 function updateRoomImage() {
     const preSelectedRoomType = document.getElementById('preSelectedRoomType');
     const roomSelect = document.getElementById('roomSelect');
     let roomType = null;
     
-    // Check if room is pre-selected
     if (preSelectedRoomType && preSelectedRoomType.value) {
         roomType = preSelectedRoomType.value;
-    } 
-    // Otherwise get from dropdown
-    else if (roomSelect) {
+    } else if (roomSelect) {
         const selectedOption = roomSelect.options[roomSelect.selectedIndex];
         roomType = selectedOption.getAttribute('data-room-type');
     }
@@ -149,23 +335,21 @@ function calculateTotal() {
     
     let price = 0;
     
-    // Check if room is pre-selected
     if (preSelectedPrice && preSelectedPrice.value) {
         price = parseFloat(preSelectedPrice.value) || 0;
-    } 
-    // Otherwise get from dropdown
-    else if (roomSelect) {
+    } else if (roomSelect) {
         const selectedOption = roomSelect.options[roomSelect.selectedIndex];
         price = parseFloat(selectedOption.getAttribute('data-price')) || 0;
     }
     
     if (checkInDate && checkOutDate && price > 0) {
-        const checkIn = new Date(checkInDate);
-        const checkOut = new Date(checkOutDate);
+        const checkIn = new Date(checkInDate + 'T00:00:00');
+        const checkOut = new Date(checkOutDate + 'T00:00:00');
         const nights = Math.ceil((checkOut - checkIn) / (1000 * 60 * 60 * 24));
+        const days = nights + 1; // Include the check-in day
         
-        if (nights > 0) {
-            const total = price * nights;
+        if (days > 0) {
+            const total = price * days;
             document.getElementById('totalAmount').textContent = total.toLocaleString('en-PH');
             document.getElementById('totalAmountInput').value = total;
             return;
@@ -175,11 +359,6 @@ function calculateTotal() {
     document.getElementById('totalAmount').textContent = '0';
     document.getElementById('totalAmountInput').value = '0';
 }
-
-// Initialize on page load if a room is pre-selected
-window.addEventListener('load', function() {
-    updateRoomImage();
-});
 </script>
 
 @endsection

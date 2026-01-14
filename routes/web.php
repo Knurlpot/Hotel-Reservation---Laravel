@@ -26,10 +26,15 @@ Route::middleware('auth')->group(function () {
     // Booking Routes (Both Receptionist and Admin can access)
     Route::resource('bookings', BookingController::class);
     Route::get('/bookings-status', [BookingController::class, 'showByStatus'])->name('bookings.status');
+    Route::patch('/bookings/{id}/checkin', [BookingController::class, 'checkin'])->name('bookings.checkin');
     Route::patch('/bookings/{id}/checkout', [BookingController::class, 'checkout'])->name('bookings.checkout');
+    Route::patch('/rooms/{id}/maintenance', [RoomController::class, 'toggleMaintenance'])->name('rooms.maintenance');
 
     // Room Routes (Only Admin can manage rooms)
     Route::resource('rooms', RoomController::class)->middleware('role:Admin');
+    
+    // API endpoint for available rooms
+    Route::get('/api/available-rooms', [RoomController::class, 'getAvailableRooms']);
 });
 
 require __DIR__.'/auth.php';

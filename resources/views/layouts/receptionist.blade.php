@@ -276,7 +276,7 @@
         <div class="brand">POSEIDONIAN</div>
         <div class="nav-links">
             <a href="{{ route('dashboard') }}">Home</a>
-            <a href="#reservations">Rooms</a>
+            <a href="#reservations">Bookings</a>
             <form method="POST" action="{{ route('logout') }}" style="display: inline;">
                 @csrf
                 <button type="submit" class="logout-btn">Log Out</button>

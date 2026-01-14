@@ -176,4 +176,28 @@ Enjoy a private balcony or terrace, full bathroom with spa features, premium ent
         return redirect()->route('rooms.index')
                      ->with('success', 'Room deleted successfully');
     }
+
+    /**
+     * Get all available rooms (API endpoint)
+     */
+    public function getAvailableRooms()
+    {
+        $rooms = Room::where('status', 'Available')->get();
+        return response()->json($rooms);
+    }
+
+    /**
+     * Toggle room maintenance status
+     */
+    public function toggleMaintenance(string $id)
+    {
+        $room = Room::findOrFail($id);
+        
+        // Toggle between Available and Under Maintenance
+        $newStatus = $room->status === 'Available' ? 'Under Maintenance' : 'Available';
+        $room->update(['status' => $newStatus]);
+
+        return redirect()->route('bookings.status')
+                     ->with('success', 'Room status updated to ' . $newStatus);
+    }
 }

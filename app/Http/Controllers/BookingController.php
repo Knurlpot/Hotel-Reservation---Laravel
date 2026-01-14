@@ -6,6 +6,7 @@ use App\Booking;
 use App\Room;
 use App\Account;
 use Illuminate\Http\Request;
+use Carbon\Carbon;
 
 class BookingController extends Controller
 {
@@ -14,10 +15,22 @@ class BookingController extends Controller
      */
     public function index()
     {
-        // Displays a list of all reservations.
-        $bookings = Booking::with(['room', 'account'])->latest()->paginate(10);
-        return view('bookings.index', compact('bookings'))
-        ->with('i', (request()->input('page', 1) - 1) * 10);
+        $today = Carbon::now()->toDateString();
+        
+        // Displays reservations (Booked bookings) - those who booked in advance and arriving today or later
+        $reservations = Booking::with(['room', 'account'])
+                               ->where('status', 'Booked')
+                               ->whereDate('check_in_date', '>=', $today)
+                               ->orderBy('check_in_date', 'asc')
+                               ->get();
+        
+        // Displays check-outs (Checked-In bookings) - those already checked in
+        $checkouts = Booking::with(['room', 'account'])
+                            ->where('status', 'Checked-In')
+                            ->orderBy('check_out_date', 'asc')
+                            ->get();
+        
+        return view('bookings.index', compact('reservations', 'checkouts'));
     }
 
     /**
@@ -25,10 +38,29 @@ class BookingController extends Controller
      */
     public function create()
     {
-        // Load available rooms and accounts for booking creation.
-        $rooms = \App\Room::where('status', 'Available')->get();
+        // Load available rooms (exclude Under Maintenance rooms)
+        $rooms = \App\Room::where('status', '!=', 'Under Maintenance')->get();
         $selectedRoomId = request()->input('room_id');
-        return view('bookings.create', compact('rooms', 'selectedRoomId'));
+        
+        // Get booked dates for the selected room if provided
+        $bookedDates = [];
+        if ($selectedRoomId) {
+            $bookedBookings = Booking::where('room_id', $selectedRoomId)
+                                    ->where('status', 'Booked')
+                                    ->get();
+            
+            foreach ($bookedBookings as $booking) {
+                $start = Carbon::parse($booking->check_in_date);
+                $end = Carbon::parse($booking->check_out_date);
+                
+                while ($start->lte($end)) {
+                    $bookedDates[] = $start->toDateString();
+                    $start->addDay();
+                }
+            }
+        }
+        
+        return view('bookings.create', compact('rooms', 'selectedRoomId', 'bookedDates'));
     }
 
     /**
@@ -51,6 +83,10 @@ class BookingController extends Controller
     $data['status'] = 'Booked';
     
     Booking::create($data);
+    
+    // Update the room status to "Booked" (no longer available)
+    $room = Room::findOrFail($data['room_id']);
+    $room->update(['status' => 'Booked']);
 
     return redirect()->route('rooms.index')
                      ->with('success','Booking confirmed.');
@@ -106,10 +142,13 @@ class BookingController extends Controller
     {
         // Allows the receptionist to cancel a booking.
         $booking = Booking::findOrFail($id);
-        $booking->delete();
+        $booking->update(['status' => 'Cancelled']);
+        
+        // Mark the room as available
+        $booking->room->update(['status' => 'Available']);
 
-        return redirect()->route('bookings.index')
-                     ->with('success', 'Booking deleted successfully');
+        return redirect()->route('bookings.status')
+                     ->with('success', 'Booking cancelled successfully. Room is now available for new bookings.');
     }
 
     /**
@@ -125,12 +164,24 @@ class BookingController extends Controller
                            ->get()
                            ->groupBy('status');
         
-        return view('bookings.status', compact('bookings'));
+        // Get all rooms for the Available section
+        $rooms = Room::all();
+        
+        return view('bookings.status', compact('bookings', 'rooms'));
     }
 
     /**
      * Mark a booking as completed (check out).
      */
+    public function checkin(string $id)
+    {
+        $booking = Booking::findOrFail($id);
+        $booking->update(['status' => 'Checked-In']);
+        
+        return redirect()->route('bookings.index')
+                     ->with('success', 'Guest checked in successfully.');
+    }
+
     public function checkout(string $id)
     {
         $booking = Booking::findOrFail($id);

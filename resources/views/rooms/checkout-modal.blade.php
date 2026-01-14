@@ -7,8 +7,6 @@
             <button class="close-btn" onclick="closeCheckout()">✕</button>
         </div>
 
-        <p class="room-title"><strong id="modal-room-title">Single Bedroom</strong></p>
-
         <div class="checkout-container">
             {{-- Calendar Section --}}
             <div class="calendar-section">
@@ -40,7 +38,14 @@
                 <form method="POST" action="{{ route('bookings.store') }}">
                     @csrf
 
-                    <input type="hidden" name="room_id" id="modal-room-id" value="">
+                    <div class="form-field">
+                        <label for="room_select">Select Room:</label>
+                        <select id="room_select" name="room_id" onchange="updateRoomDetails()" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;">
+                            <option value="">-- Choose an Available Room --</option>
+                        </select>
+                    </div>
+
+                    <p class="room-title"><strong id="modal-room-title">Select a room</strong></p>
 
                     <div class="form-field">
                         <label>CHECK IN:</label>
@@ -80,28 +85,74 @@
 
 <script>
     let bookedDatesGlobal = [];
+    let availableRoomsData = [];
 
-    function openCheckout(roomId, roomType, roomPrice, bookedDates = []) {
+    function openCheckout(roomId = null, roomType = null, roomPrice = null, bookedDates = []) {
         // Set booked dates globally
         bookedDatesGlobal = bookedDates;
         
-        // Set room information
-        document.getElementById('modal-room-id').value = roomId;
-        document.getElementById('modal-room-title').textContent = roomType + ' Bedroom';
-        
-        // Display rate per night
-        document.getElementById('ratePerNight').textContent = roomPrice.toLocaleString();
+        // Fetch available rooms filtered by room type
+        fetch('/api/available-rooms')
+            .then(response => response.json())
+            .then(data => {
+                availableRoomsData = data;
+                const roomSelect = document.getElementById('room_select');
+                roomSelect.innerHTML = '<option value="">-- Choose an Available Room --</option>';
+                
+                // Filter rooms by the selected room type
+                const filteredRooms = roomType ? data.filter(room => room.room_type === roomType) : data;
+                
+                filteredRooms.forEach(room => {
+                    const option = document.createElement('option');
+                    option.value = room.room_id;
+                    option.textContent = `Room ${room.room_number} (${room.room_type}) - ₱${room.price.toLocaleString()}`;
+                    option.dataset.roomType = room.room_type;
+                    option.dataset.price = room.price;
+                    roomSelect.appendChild(option);
+                });
+                
+                // Pre-select room if provided
+                if (roomId) {
+                    roomSelect.value = roomId;
+                    updateRoomDetails();
+                }
+            });
         
         // Show modal
         document.getElementById('checkoutModal').style.display = 'flex';
         
         // Initialize calendar and calculations
         generateCalendar();
-        updateTotalAmount(roomPrice);
+    }
+
+    function updateRoomDetails() {
+        const roomSelect = document.getElementById('room_select');
+        const selectedOption = roomSelect.options[roomSelect.selectedIndex];
+        
+        if (selectedOption.value) {
+            const roomType = selectedOption.dataset.roomType;
+            const roomPrice = parseInt(selectedOption.dataset.price);
+            
+            document.getElementById('modal-room-title').textContent = roomType + ' Bedroom';
+            document.getElementById('ratePerNight').textContent = roomPrice.toLocaleString();
+            updateTotalAmount(roomPrice);
+        } else {
+            document.getElementById('modal-room-title').textContent = 'Select a room';
+            document.getElementById('ratePerNight').textContent = '0';
+            document.getElementById('totalAmount').textContent = '0';
+        }
     }
 
     function closeCheckout() {
         document.getElementById('checkoutModal').style.display = 'none';
+        // Reset form
+        document.getElementById('room_select').value = '';
+        document.getElementById('checkInDate').value = '';
+        document.getElementById('checkOutDate').value = '';
+        document.getElementById('checkInDisplay').value = '';
+        document.getElementById('checkOutDisplay').value = '';
+        document.getElementById('guest_name').value = '';
+        document.getElementById('totalAmount').textContent = '0';
     }
 
     function generateCalendar() {
@@ -152,8 +203,15 @@
     function selectDate(dateStr) {
         const checkInDate = document.getElementById('checkInDate').value;
         const checkOutDate = document.getElementById('checkOutDate').value;
-        const roomPriceSpan = document.getElementById('ratePerNight').textContent;
-        const roomPrice = parseInt(roomPriceSpan.replace(/,/g, ''));
+        const roomSelect = document.getElementById('room_select');
+        
+        if (!roomSelect.value) {
+            alert('Please select a room first');
+            return;
+        }
+        
+        const selectedOption = roomSelect.options[roomSelect.selectedIndex];
+        const roomPrice = parseInt(selectedOption.dataset.price);
         
         if (!checkInDate) {
             // First selection - set check-in date
@@ -228,6 +286,8 @@
             const nights = Math.ceil((checkOut - checkIn) / (1000 * 60 * 60 * 24));
             const total = nights * pricePerNight;
             document.getElementById('totalAmount').textContent = total.toLocaleString();
+        } else {
+            document.getElementById('totalAmount').textContent = '0';
         }
     }
 </script>

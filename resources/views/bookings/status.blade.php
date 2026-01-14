@@ -21,13 +21,13 @@
         @forelse($bookings as $status => $statusBookings)
             <div style="margin-bottom: 50px;">
                 <h3 style="font-size: 18px; font-weight: 600; color: #333; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #3ba0ff;">
-                    {{ ucfirst($status) }} ({{ count($statusBookings) }})
+                    {{ ucfirst($status) }}
                 </h3>
 
                 @if($statusBookings->isEmpty())
                     <p style="color: #999; padding: 20px;">No bookings with status "{{ $status }}"</p>
                 @else
-                    {{-- Filter Buttons --}}
+                    {{-- Filter Buttons (for all sections) --}}
                     <div style="margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
                         <button class="filter-btn filter-all" onclick="filterByRoomType(this, '{{ $status }}', 'all')" style="background: #3ba0ff; color: white; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;">
                             All
@@ -55,23 +55,53 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach($statusBookings as $booking)
+                                @foreach($rooms as $room)
                                     @php
-                                        $statusBadgeClass = 'available';
+                                        $roomStatus = $room->status ?? 'Available';
+                                        $badgeStyle = $roomStatus === 'Under Maintenance' 
+                                            ? 'background: #fff3cd; color: #856404;' 
+                                            : 'background: #d4edda; color: #155724;';
                                     @endphp
-                                    <tr>
-                                        <td>{{ $booking->room_id }}</td>
-                                        <td>{{ $booking->room->room_type ?? 'N/A' }}</td>
-                                        <td>₱ {{ number_format($booking->room->price ?? 0, 0) }}</td>
-                                        <td>
-                                            <span style="padding: 6px 12px; border-radius: 4px; font-size: 12px; font-weight: 600; background: #d4edda; color: #155724;">
-                                                Available
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <a href="{{ route('bookings.create', ['room_id' => $booking->room_id]) }}" class="btn-primary" style="display: inline-block; text-decoration: none;">MAKE A BOOKING</a>
-                                        </td>
-                                    </tr>
+                                    @if($roomStatus !== 'Under Maintenance')
+                                        <tr>
+                                            <td>{{ $room->room_id }}</td>
+                                            <td>{{ $room->room_type ?? 'N/A' }}</td>
+                                            <td>₱ {{ number_format($room->price ?? 0, 0) }}</td>
+                                            <td>
+                                                <span style="padding: 6px 12px; border-radius: 4px; font-size: 12px; font-weight: 600; {{ $badgeStyle }}">
+                                                    {{ $roomStatus }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <div style="display: flex; gap: 10px;">
+                                                    <a href="{{ route('bookings.create', ['room_id' => $room->room_id]) }}" class="btn-primary" style="display: inline-block; text-decoration: none; padding: 8px 12px; font-size: 11px;">MAKE A BOOKING</a>
+                                                    <form method="POST" action="{{ route('rooms.maintenance', $room->room_id) }}" style="display: inline;">
+                                                        @csrf
+                                                        @method('PATCH')
+                                                        <button type="submit" class="btn-warning" style="padding: 8px 12px; font-size: 11px; background: #ffc107; color: #333; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;" onclick="return confirm('Mark this room as Under Maintenance?')">UNDER MAINTENANCE</button>
+                                                    </form>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    @else
+                                        <tr>
+                                            <td>{{ $room->room_id }}</td>
+                                            <td>{{ $room->room_type ?? 'N/A' }}</td>
+                                            <td>₱ {{ number_format($room->price ?? 0, 0) }}</td>
+                                            <td>
+                                                <span style="padding: 6px 12px; border-radius: 4px; font-size: 12px; font-weight: 600; background: #fff3cd; color: #856404;">
+                                                    Under Maintenance
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <form method="POST" action="{{ route('rooms.maintenance', $room->room_id) }}" style="display: inline;">
+                                                    @csrf
+                                                    @method('PATCH')
+                                                    <button type="submit" class="btn-success" style="padding: 8px 12px; font-size: 11px; background: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;" onclick="return confirm('Mark this room as Available?')">MARK AVAILABLE</button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    @endif
                                 @endforeach
                             </tbody>
                         </table>
@@ -103,7 +133,7 @@
                                             <td>{{ $booking->room->room_type ?? 'N/A' }}</td>
                                             <td>{{ \Carbon\Carbon::parse($booking->check_in_date)->format('M d, Y') }}</td>
                                             <td>{{ \Carbon\Carbon::parse($booking->check_out_date)->format('M d, Y') }}</td>
-                                            <td>₱ {{ number_format($booking->room->price ?? 0, 0) }}</td>
+                                            <td>₱ {{ number_format($booking->total_amount ?? 0, 0) }}</td>
                                             <td>{{ $booking->account->first_name ?? 'N/A' }} {{ $booking->account->last_name ?? '' }}</td>
                                             <td>
                                                 <span style="padding: 6px 12px; border-radius: 4px; font-size: 12px; font-weight: 600; background: #fff3cd; color: #856404;">
@@ -111,11 +141,18 @@
                                                 </span>
                                             </td>
                                             <td>
-                                                <form method="POST" action="{{ route('bookings.checkout', $booking->booking_id) }}" style="display: inline;">
-                                                    @csrf
-                                                    @method('PATCH')
-                                                    <button type="submit" class="btn-primary" onclick="return confirm('Are you sure you want to check out this guest?')">CHECK OUT</button>
-                                                </form>
+                                                <div style="display: flex; gap: 10px;">
+                                                    <form method="POST" action="{{ route('bookings.checkout', $booking->booking_id) }}" style="display: inline;">
+                                                        @csrf
+                                                        @method('PATCH')
+                                                        <button type="submit" class="btn-primary" onclick="return confirm('Are you sure you want to check out this guest?')" style="padding: 8px 12px; font-size: 11px;">CHECK OUT</button>
+                                                    </form>
+                                                    <form method="POST" action="{{ route('bookings.destroy', $booking->booking_id) }}" style="display: inline;">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit" class="btn-danger" onclick="return confirm('Are you sure you want to cancel this booking?')" style="padding: 8px 12px; font-size: 11px; background: #dc3545; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">CANCEL</button>
+                                                    </form>
+                                                </div>
                                             </td>
                                         </tr>
                                     @endforeach
@@ -147,10 +184,47 @@
                                             <td>{{ $booking->room->room_type ?? 'N/A' }}</td>
                                             <td>{{ \Carbon\Carbon::parse($booking->check_in_date)->format('M d, Y') }}</td>
                                             <td>{{ \Carbon\Carbon::parse($booking->check_out_date)->format('M d, Y') }}</td>
-                                            <td>₱ {{ number_format($booking->room->price ?? 0, 0) }}</td>
+                                            <td>₱ {{ number_format($booking->total_amount ?? 0, 0) }}</td>
                                             <td>{{ $booking->account->first_name ?? 'N/A' }} {{ $booking->account->last_name ?? '' }}</td>
                                             <td>
                                                 <span style="padding: 6px 12px; border-radius: 4px; font-size: 12px; font-weight: 600; background: #d1ecf1; color: #0c5460;">
+                                                    {{ ucfirst($booking->status) }}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        @elseif($status === 'Cancelled')
+                            {{-- Cancelled Bookings Table without Action Column --}}
+                            <table class="guest-table">
+                                <thead>
+                                    <tr>
+                                        <th>ROOM ID</th>
+                                        <th>GUEST NAME</th>
+                                        <th>ROOM</th>
+                                        <th>CHECK IN</th>
+                                        <th>CHECK OUT</th>
+                                        <th>AMOUNT</th>
+                                        <th>STAFF</th>
+                                        <th>STATUS</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($statusBookings as $booking)
+                                        @php
+                                            $statusBadgeClass = 'cancelled';
+                                        @endphp
+                                        <tr>
+                                            <td>{{ $booking->room_id }}</td>
+                                            <td><strong>{{ $booking->guest_name }}</strong></td>
+                                            <td>{{ $booking->room->room_type ?? 'N/A' }}</td>
+                                            <td>{{ \Carbon\Carbon::parse($booking->check_in_date)->format('M d, Y') }}</td>
+                                            <td>{{ \Carbon\Carbon::parse($booking->check_out_date)->format('M d, Y') }}</td>
+                                            <td>₱ {{ number_format($booking->total_amount ?? 0, 0) }}</td>
+                                            <td>{{ $booking->account->first_name ?? 'N/A' }} {{ $booking->account->last_name ?? '' }}</td>
+                                            <td>
+                                                <span style="padding: 6px 12px; border-radius: 4px; font-size: 12px; font-weight: 600; background: #f8d7da; color: #721c24;">
                                                     {{ ucfirst($booking->status) }}
                                                 </span>
                                             </td>
@@ -170,7 +244,7 @@
 
 <script>
 function filterByRoomType(button, status, roomType) {
-    // Update button styles
+    // Update button styles - only for this status group
     const buttons = document.querySelectorAll(`button.filter-btn[onclick*="'${status}'"]`);
     buttons.forEach(btn => {
         btn.style.background = '#f0f0f0';
@@ -182,22 +256,31 @@ function filterByRoomType(button, status, roomType) {
     button.style.color = 'white';
     button.style.border = 'none';
     
-    // Filter table rows
-    const tables = document.querySelectorAll('table.guest-table');
-    tables.forEach(table => {
-        const rows = table.querySelectorAll('tbody tr');
-        rows.forEach(row => {
-            const roomTypeCell = row.querySelector('td:nth-child(2)');
-            if (!roomTypeCell) return;
-            
-            const cellRoomType = roomTypeCell.textContent.trim();
-            
-            if (roomType === 'all') {
-                row.style.display = '';
-            } else {
-                row.style.display = cellRoomType === roomType ? '' : 'none';
-            }
-        });
+    // Find the closest table to this button and filter only that table
+    const table = button.closest('div').nextElementSibling;
+    if (!table || !table.classList.contains('guest-table')) {
+        return;
+    }
+    
+    const rows = table.querySelectorAll('tbody tr');
+    rows.forEach(row => {
+        // For Available section, room type is in column 2. For others, it's column 3
+        let roomTypeCell;
+        if (status === 'Available') {
+            roomTypeCell = row.querySelector('td:nth-child(2)'); // Available section
+        } else {
+            roomTypeCell = row.querySelector('td:nth-child(3)'); // Booked, Checked-In, Completed, Cancelled sections
+        }
+        
+        if (!roomTypeCell) return;
+        
+        const cellRoomType = roomTypeCell.textContent.trim();
+        
+        if (roomType === 'all') {
+            row.style.display = '';
+        } else {
+            row.style.display = cellRoomType === roomType ? '' : 'none';
+        }
     });
 }
 </script>
