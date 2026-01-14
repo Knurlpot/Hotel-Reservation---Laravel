@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Room;
+use App\Booking;
 use Illuminate\Http\Request;
+use Carbon\Carbon;
 
 class RoomController extends Controller
 {
@@ -14,7 +16,32 @@ class RoomController extends Controller
     {
         //
         $rooms = Room::latest()->paginate(10);
-        return view('rooms.index', compact('rooms'))
+        
+        // Get current guests with "Booked" status (check-in date <= today AND check-out date >= today)
+        $today = Carbon::now()->toDateString();
+        $currentGuests = Booking::whereDate('check_in_date', '<=', $today)
+            ->whereDate('check_out_date', '>=', $today)
+            ->where('status', 'Booked')
+            ->with(['room', 'account'])
+            ->get();
+        
+        // Get one room of each type for the room cards
+        $singleRoom = Room::where('room_type', 'Single')->first();
+        if (!$singleRoom) {
+            $singleRoom = Room::create(['room_number' => '101', 'room_type' => 'Single', 'price' => 1309, 'status' => 'Available']);
+        }
+        
+        $doubleRoom = Room::where('room_type', 'Double')->first();
+        if (!$doubleRoom) {
+            $doubleRoom = Room::create(['room_number' => '102', 'room_type' => 'Double', 'price' => 2500, 'status' => 'Available']);
+        }
+        
+        $suiteRoom = Room::where('room_type', 'Suite')->first();
+        if (!$suiteRoom) {
+            $suiteRoom = Room::create(['room_number' => '103', 'room_type' => 'Suite', 'price' => 4500, 'status' => 'Available']);
+        }
+        
+        return view('rooms.index', compact('rooms', 'currentGuests', 'singleRoom', 'doubleRoom', 'suiteRoom'))
             ->with('i', (request()->input('page', 1) - 1) * 10);
     }
 
@@ -58,7 +85,56 @@ class RoomController extends Controller
     public function show(string $id)
     {
         $room = Room::findOrFail($id);
-        return view('rooms.show', compact('room'));
+        
+        // Room descriptions
+        $descriptions = [
+            'Single' => 'Our Single Room is thoughtfully designed for guests who value comfort, privacy, and simplicity. Featuring cozy interiors and modern amenities, it\'s ideal for solo travelers seeking relaxation after a long day.
+
+Enjoy essential amenities including air conditioning, a private bathroom, complimentary Wi-Fi, and a dedicated workspace. Whether you\'re unwinding after a long day or preparing for tomorrow\'s plans, the Single Room offers a peaceful retreat at an exceptional value.',
+            'Double' => 'Our Double Room offers spacious comfort perfect for couples or those seeking extra space. With elegant furnishings and modern amenities, it\'s designed for guests who want to enjoy a luxurious retreat with plenty of room to relax.
+
+Complete with premium bedding, en-suite bathroom with premium toiletries, high-speed Wi-Fi, and a comfortable seating area. The Double Room combines style and comfort for an unforgettable stay.',
+            'Suite' => 'Our Suite is the ultimate in luxury and spaciousness. Perfect for those seeking premium accommodations with an exclusive experience. Featuring separate living and sleeping areas, elegant décor, and high-end amenities.
+
+Enjoy a private balcony or terrace, full bathroom with spa features, premium entertainment systems, concierge service, and exclusive access to our premium facilities. The Suite sets the standard for luxury hospitality.',
+        ];
+        
+        // Room images based on type
+        $roomImages = [
+            'Single' => [
+                'main' => 'images/single.jpg',
+                'thumb1' => 'images/room-main.jpg',
+                'thumb2' => 'images/room-2.jpg',
+            ],
+            'Double' => [
+                'main' => 'images/double.jpg',
+                'thumb1' => 'images/room-3.jpg',
+                'thumb2' => 'images/room-4.jpg',
+            ],
+            'Suite' => [
+                'main' => 'images/suite.jpg',
+                'thumb1' => 'images/room-5.jpg',
+                'thumb2' => 'images/room-6.jpg',
+            ],
+        ];
+        
+        $description = $descriptions[$room->room_type] ?? 'Experience comfort and luxury in our thoughtfully designed rooms.';
+        $images = $roomImages[$room->room_type] ?? $roomImages['Single'];
+        
+        // Get all bookings for this room to prevent double booking
+        $bookings = Booking::where('room_id', $id)->get();
+        $bookedDates = [];
+        foreach ($bookings as $booking) {
+            $startDate = new \DateTime($booking->check_in_date);
+            $endDate = new \DateTime($booking->check_out_date);
+            
+            while ($startDate < $endDate) {
+                $bookedDates[] = $startDate->format('Y-m-d');
+                $startDate->modify('+1 day');
+            }
+        }
+        
+        return view('rooms.show', compact('room', 'description', 'images', 'bookedDates'));
     }
 
     /**

@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('guest_name');
             $table->date('check_in_date');
             $table->date('check_out_date');
-            $table->enum('status', ['Available', 'Booked', 'Pending'])->default('Pending');
+            $table->enum('status', ['Available', 'Booked', 'Pending', 'Completed'])->default('Pending');
             $table->timestamps();
         });
     }

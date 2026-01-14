@@ -18,28 +18,28 @@
     <div class="room-cards">
 
         {{-- Single --}}
-        <div class="room-card">
+        <a href="{{ route('rooms.show', $singleRoom->room_id ?? '#') }}" class="room-card" style="text-decoration: none;">
             <img src="{{ asset('images/single.jpg') }}">
             <div class="overlay">
                 <h3>Single</h3>
             </div>
-        </div>
+        </a>
 
         {{-- Double --}}
-        <div class="room-card">
+        <a href="{{ route('rooms.show', $doubleRoom->room_id ?? '#') }}" class="room-card" style="text-decoration: none;">
             <img src="{{ asset('images/double.jpg') }}">
             <div class="overlay">
                 <h3>Double</h3>
             </div>
-        </div>
+        </a>
 
         {{-- Suite --}}
-        <div class="room-card">
+        <a href="{{ route('rooms.show', $suiteRoom->room_id ?? '#') }}" class="room-card" style="text-decoration: none;">
             <img src="{{ asset('images/suite.jpg') }}">
             <div class="overlay">
                 <h3>Suite</h3>
             </div>
-        </div>
+        </a>
 
     </div>
 </section>
@@ -58,33 +58,25 @@
                 <th>CHECK IN</th>
                 <th>CHECK OUT</th>
                 <th>AMOUNT</th>
-                <th>ACTION</th>
             </tr>
         </thead>
         <tbody>
-            <tr>
-                <td>101</td>
-                <td><strong>Stephen Malkmus</strong></td>
-                <td>Single</td>
-                <td>DEC 24, 2025</td>
-                <td>DEC 25, 2025</td>
-                <td>₱ 1,309</td>
-                <td>
-                    <button class="btn-primary">CHECK OUT</button>
-                </td>
-            </tr>
-
-            <tr>
-                <td>102</td>
-                <td><strong>Kali Uchis</strong></td>
-                <td>Suite</td>
-                <td>DEC 24, 2025</td>
-                <td>DEC 28, 2025</td>
-                <td>₱ 2,309</td>
-                <td>
-                    <button class="btn-primary">CHECK OUT</button>
-                </td>
-            </tr>
+            @if($currentGuests->count() > 0)
+                @foreach($currentGuests as $guest)
+                    <tr>
+                        <td>{{ $guest->booking_id }}</td>
+                        <td><strong>{{ $guest->guest_name }}</strong></td>
+                        <td>{{ $guest->room->room_type }}</td>
+                        <td>{{ \Carbon\Carbon::parse($guest->check_in_date)->format('M d, Y') }}</td>
+                        <td>{{ \Carbon\Carbon::parse($guest->check_out_date)->format('M d, Y') }}</td>
+                        <td>₱ {{ number_format($guest->room->price, 0) }}</td>
+                    </tr>
+                @endforeach
+            @else
+                <tr>
+                    <td colspan="6" style="text-align: center; padding: 20px;">No current guests</td>
+                </tr>
+            @endif
         </tbody>
     </table>
 </section>

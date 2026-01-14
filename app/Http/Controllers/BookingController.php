@@ -27,7 +27,8 @@ class BookingController extends Controller
     {
         // Load available rooms and accounts for booking creation.
         $rooms = \App\Room::where('status', 'Available')->get();
-        return view('bookings.create', compact('rooms'));
+        $selectedRoomId = request()->input('room_id');
+        return view('bookings.create', compact('rooms', 'selectedRoomId'));
     }
 
     /**
@@ -41,12 +42,17 @@ class BookingController extends Controller
         'guest_name' => 'required',
         'check_in_date' => 'required|date',
         'check_out_date' => 'required|date|after:check_in_date',
+        'total_amount' => 'required|numeric|min:0',
     ]);
 
     // This logic ensures the booking is tied to the logged-in staff member
-    Booking::create($request->all());
+    $data = $request->all();
+    $data['account_id'] = auth()->user()->account_id ?? auth()->id();
+    $data['status'] = 'Booked';
+    
+    Booking::create($data);
 
-    return redirect()->route('bookings.index')
+    return redirect()->route('rooms.index')
                      ->with('success','Booking confirmed.');
     }
 
@@ -104,5 +110,46 @@ class BookingController extends Controller
 
         return redirect()->route('bookings.index')
                      ->with('success', 'Booking deleted successfully');
+    }
+
+    /**
+     * Display bookings organized by status.
+     */
+    public function showByStatus()
+    {
+        // Get all bookings organized by their status
+        $bookings = Booking::with(['room', 'account'])
+                           ->orderBy('status')
+                           ->orderBy('room_id', 'asc')
+                           ->orderBy('check_in_date', 'asc')
+                           ->get()
+                           ->groupBy('status');
+        
+        return view('bookings.status', compact('bookings'));
+    }
+
+    /**
+     * Mark a booking as completed (check out).
+     */
+    public function checkout(string $id)
+    {
+        $booking = Booking::findOrFail($id);
+        $booking->update(['status' => 'Completed']);
+        
+        // Mark the room as available
+        $booking->room->update(['status' => 'Available']);
+        
+        // Create a new "Available" booking record for the room
+        Booking::create([
+            'room_id' => $booking->room_id,
+            'account_id' => auth()->user()->account_id,
+            'guest_name' => 'Available',
+            'check_in_date' => now()->toDateString(),
+            'check_out_date' => now()->toDateString(),
+            'status' => 'Available'
+        ]);
+
+        return redirect()->route('bookings.status')
+                     ->with('success', 'Guest checked out successfully. Booking marked as completed and room is now available.');
     }
 }

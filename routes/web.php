@@ -25,6 +25,8 @@ Route::middleware('auth')->group(function () {
 
     // Booking Routes (Both Receptionist and Admin can access)
     Route::resource('bookings', BookingController::class);
+    Route::get('/bookings-status', [BookingController::class, 'showByStatus'])->name('bookings.status');
+    Route::patch('/bookings/{id}/checkout', [BookingController::class, 'checkout'])->name('bookings.checkout');
 
     // Room Routes (Only Admin can manage rooms)
     Route::resource('rooms', RoomController::class)->middleware('role:Admin');
