@@ -221,6 +221,54 @@
             border-top: 1px solid #e5e7eb;
         }
 
+        /* ROOM CARDS */
+        .room-cards {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+
+        .room-card {
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            height: 300px;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .room-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .room-card img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .room-card .overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+            padding: 30px 20px 20px;
+            color: #fff;
+        }
+
+        .room-card .overlay h3 {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .room-card .overlay p {
+            font-size: 13px;
+            margin: 3px 0;
+            opacity: 0.9;
+        }
+
         /* FOOTER */
         footer {
             background: #1a1a1a;

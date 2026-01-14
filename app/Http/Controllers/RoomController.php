@@ -17,11 +17,8 @@ class RoomController extends Controller
         //
         $rooms = Room::latest()->paginate(10);
         
-        // Get current guests with "Booked" status (check-in date <= today AND check-out date >= today)
-        $today = Carbon::now()->toDateString();
-        $currentGuests = Booking::whereDate('check_in_date', '<=', $today)
-            ->whereDate('check_out_date', '>=', $today)
-            ->where('status', 'Booked')
+        // Get current guests with "Checked-In" status
+        $currentGuests = Booking::where('status', 'Checked-In')
             ->with(['room', 'account'])
             ->get();
         

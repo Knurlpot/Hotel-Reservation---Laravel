@@ -18,7 +18,7 @@
             <h2>BOOKING DETAILS</h2>
         </div>
         <div style="display: flex; gap: 10px;">
-            <a href="{{ route('bookings.status') }}" class="btn btn-secondary" style="background: #6c757d; color: #fff; padding: 10px 18px; border-radius: 6px; border: none; font-size: 12px; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-block; transition: background 0.3s ease;" onmouseover="this.style.background='#5a6268'" onmouseout="this.style.background='#6c757d'">Back to Bookings</a>
+            <a href="{{ route('bookings.index') }}" class="btn btn-secondary" style="background: #6c757d; color: #fff; padding: 10px 18px; border-radius: 6px; border: none; font-size: 12px; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-block; transition: background 0.3s ease;" onmouseover="this.style.background='#5a6268'" onmouseout="this.style.background='#6c757d'">Back to Bookings</a>
             <button type="submit" form="editBookingForm" class="btn-primary" style="background: #28a745; color: #fff; padding: 10px 18px; border-radius: 6px; border: none; font-size: 12px; font-weight: 600; cursor: pointer; transition: background 0.3s ease;" onmouseover="this.style.background='#218838'" onmouseout="this.style.background='#28a745'">Save Changes</button>
         </div>
     </div>
@@ -78,7 +78,7 @@
                                             $isToday = $dayCounter == $today->day;
                                             $currentDate = \Carbon\Carbon::createFromDate($year, $month, $dayCounter);
                                             $isPast = $currentDate->isBefore($today);
-                                            // Check if date is booked (excluding current booking's dates)
+                                            // Allow selecting the booking's own dates, but block other booked dates
                                             $isBooked = in_array($dateStr, $allBookingDates ?? []);
                                         @endphp
                                         @if ($isPast)

@@ -100,36 +100,24 @@
             @csrf
             
             <div style="margin-bottom: 25px;">
+                <label style="display: block; font-weight: 600; color: #333; margin-bottom: 8px;">Select Room</label>
+                <select name="room_id" id="roomSelect" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;" required onchange="updateRoomImage(); updateBookedDates(); calculateTotal()">
+                    <option value="">-- Select an Available Room --</option>
+                    @foreach($rooms as $room)
+                        <option value="{{ $room->room_id }}" data-room-type="{{ $room->room_type }}" data-price="{{ $room->price }}" @if($selectedRoomId == $room->room_id) selected @endif>
+                            Room {{ $room->room_number }} ({{ $room->room_type }}) - ₱{{ number_format($room->price, 0) }}
+                        </option>
+                    @endforeach
+                </select>
                 @if($selectedRoomId)
-                    {{-- If room is pre-selected, display it as read-only --}}
-                    <label style="display: block; font-weight: 600; color: #333; margin-bottom: 8px;">Selected Room</label>
-                    <div style="padding: 12px; background: #f0f0f0; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; color: #555;">
-                        @php
-                            $selectedRoom = $rooms->firstWhere('room_id', $selectedRoomId);
-                            $roomInfo = $selectedRoom ? "Room {$selectedRoom->room_number} ({$selectedRoom->room_type}) - ₱" . number_format($selectedRoom->price, 0) : 'Room not found';
-                        @endphp
-                        <strong>{{ $roomInfo }}</strong>
-                        <input type="hidden" id="preSelectedRoomType" value="{{ $selectedRoom->room_type ?? '' }}">
-                        <input type="hidden" id="preSelectedPrice" value="{{ $selectedRoom->price ?? 0 }}">
-                    </div>
-                    <input type="hidden" name="room_id" value="{{ $selectedRoomId }}">
-                @else
-                    {{-- If no room is pre-selected, show the dropdown --}}
-                    <label style="display: block; font-weight: 600; color: #333; margin-bottom: 8px;">Select Room</label>
-                    <select name="room_id" id="roomSelect" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;" required onchange="updateRoomImage(); calculateTotal()">
-                        <option value="">-- Select an Available Room --</option>
-                        @foreach($rooms as $room)
-                            <option value="{{ $room->room_id }}" data-room-type="{{ $room->room_type }}" data-price="{{ $room->price }}" @if($selectedRoomId == $room->room_id) selected @endif>
-                                Room {{ $room->room_number }} ({{ $room->room_type }}) - ₱{{ number_format($room->price, 0) }}
-                            </option>
-                        @endforeach
-                    </select>
+                    <input type="hidden" id="preSelectedRoomType" value="{{ $rooms->firstWhere('room_id', $selectedRoomId)->room_type ?? '' }}">
+                    <input type="hidden" id="preSelectedPrice" value="{{ $rooms->firstWhere('room_id', $selectedRoomId)->price ?? 0 }}">
                 @endif
             </div>
 
             <div style="margin-bottom: 25px;">
                 <label style="display: block; font-weight: 600; color: #333; margin-bottom: 8px;">Guest Full Name</label>
-                <input type="text" name="guest_name" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;" placeholder="John Doe" required>
+                <input type="text" name="guest_name" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;" placeholder="Name" required>
             </div>
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px;">
@@ -162,7 +150,7 @@
 
             <div style="display: flex; gap: 15px; margin-top: auto;">
                 <button type="submit" class="btn-primary">Confirm Booking</button>
-                <a href="{{ route('bookings.status') }}" style="background: #6c757d; color: #fff; padding: 10px 18px; border-radius: 6px; border: none; font-size: 12px; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-block; transition: background 0.3s ease;" onmouseover="this.style.background='#5a6268'" onmouseout="this.style.background='#6c757d'">Back to Bookings</a>
+                <a href="{{ route('bookings.index') }}" style="background: #6c757d; color: #fff; padding: 10px 18px; border-radius: 6px; border: none; font-size: 12px; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-block; transition: background 0.3s ease;" onmouseover="this.style.background='#5a6268'" onmouseout="this.style.background='#6c757d'">Back to Bookings</a>
             </div>
         </form>
 
@@ -370,6 +358,64 @@ function calculateTotal() {
     
     document.getElementById('totalAmount').textContent = '0';
     document.getElementById('totalAmountInput').value = '0';
+}
+
+function updateBookedDates() {
+    const roomSelect = document.getElementById('roomSelect');
+    const selectedRoomId = roomSelect.value;
+    
+    if (!selectedRoomId) {
+        // Clear all booked date styles
+        const allCells = document.querySelectorAll('[data-booked="true"]');
+        allCells.forEach(cell => {
+            cell.removeAttribute('data-booked');
+            cell.style.background = '#fff';
+            cell.style.textDecoration = 'none';
+            cell.style.color = '#333';
+            cell.style.cursor = 'pointer';
+        });
+        return;
+    }
+    
+    // Fetch booked dates for the selected room
+    fetch(`{{ route('bookings.create') }}?room_id=${selectedRoomId}`)
+        .then(response => response.text())
+        .then(html => {
+            // Parse the HTML to extract booked dates
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const bookedCells = doc.querySelectorAll('[data-booked="true"]');
+            const bookedDates = [];
+            
+            bookedCells.forEach(cell => {
+                bookedDates.push(cell.textContent.trim());
+            });
+            
+            // Update calendar display
+            const calendarCells = document.querySelectorAll('.calendar-cell');
+            calendarCells.forEach(cell => {
+                const dayText = cell.textContent.trim();
+                if (bookedDates.includes(dayText)) {
+                    cell.setAttribute('data-booked', 'true');
+                    cell.style.background = '#f5f5f5';
+                    cell.style.textDecoration = 'line-through';
+                    cell.style.color = '#999';
+                    cell.style.cursor = 'not-allowed';
+                    cell.onclick = null;
+                } else {
+                    cell.removeAttribute('data-booked');
+                    cell.style.background = '#fff';
+                    cell.style.textDecoration = 'none';
+                    cell.style.color = '#333';
+                    cell.style.cursor = 'pointer';
+                    // Re-attach the click handler
+                    cell.onclick = function() {
+                        selectDate(this.getAttribute('data-date'));
+                    };
+                }
+            });
+        })
+        .catch(error => console.error('Error fetching booked dates:', error));
 }
 </script>
 

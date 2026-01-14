@@ -299,6 +299,21 @@
             margin-bottom: 30px;
         }
 
+        .book-now-btn {
+            background: #3ba0ff !important;
+            color: #fff !important;
+            padding: 12px 30px !important;
+            border-radius: 6px !important;
+            text-decoration: none !important;
+            font-weight: 600 !important;
+            display: inline-block !important;
+            transition: background 0.3s ease !important;
+        }
+
+        .book-now-btn:hover {
+            background: #2a7dd9 !important;
+        }
+
         .room-info .btn-primary {
             padding: 12px 24px;
             font-size: 14px;

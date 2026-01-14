@@ -31,7 +31,9 @@ Route::middleware('auth')->group(function () {
     Route::patch('/rooms/{id}/maintenance', [RoomController::class, 'toggleMaintenance'])->name('rooms.maintenance');
 
     // Room Routes (Only Admin can manage rooms)
-    Route::resource('rooms', RoomController::class)->middleware('role:Admin');
+    // Allow receptionists to view room details
+    Route::get('/rooms/{id}', [RoomController::class, 'show'])->name('rooms.show');
+    Route::resource('rooms', RoomController::class)->middleware('role:Admin')->except(['show']);
     
     // API endpoint for available rooms
     Route::get('/api/available-rooms', [RoomController::class, 'getAvailableRooms']);

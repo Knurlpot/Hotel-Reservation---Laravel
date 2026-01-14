@@ -24,13 +24,41 @@ class BookingController extends Controller
                                ->orderBy('check_in_date', 'asc')
                                ->get();
         
+        // Displays all booked transactions
+        $booked = Booking::with(['room', 'account'])
+                        ->where('status', 'Booked')
+                        ->orderBy('check_in_date', 'asc')
+                        ->get();
+        
         // Displays check-outs (Checked-In bookings) - those already checked in
         $checkouts = Booking::with(['room', 'account'])
                             ->where('status', 'Checked-In')
                             ->orderBy('check_out_date', 'asc')
                             ->get();
         
-        return view('bookings.index', compact('reservations', 'checkouts'));
+        // Displays completed bookings
+        $completed = Booking::with(['room', 'account'])
+                           ->where('status', 'Completed')
+                           ->orderBy('check_out_date', 'desc')
+                           ->get();
+        
+        // Get one room of each type for the room cards
+        $singleRoom = Room::where('room_type', 'Single')->first();
+        if (!$singleRoom) {
+            $singleRoom = Room::create(['room_number' => '101', 'room_type' => 'Single', 'price' => 1309, 'status' => 'Available']);
+        }
+        
+        $doubleRoom = Room::where('room_type', 'Double')->first();
+        if (!$doubleRoom) {
+            $doubleRoom = Room::create(['room_number' => '102', 'room_type' => 'Double', 'price' => 2500, 'status' => 'Available']);
+        }
+        
+        $suiteRoom = Room::where('room_type', 'Suite')->first();
+        if (!$suiteRoom) {
+            $suiteRoom = Room::create(['room_number' => '103', 'room_type' => 'Suite', 'price' => 4500, 'status' => 'Available']);
+        }
+        
+        return view('bookings.index', compact('reservations', 'booked', 'checkouts', 'completed', 'singleRoom', 'doubleRoom', 'suiteRoom'));
     }
 
     /**
@@ -38,9 +66,19 @@ class BookingController extends Controller
      */
     public function create()
     {
-        // Load available rooms (exclude Under Maintenance rooms)
-        $rooms = \App\Room::where('status', '!=', 'Under Maintenance')->get();
         $selectedRoomId = request()->input('room_id');
+        
+        // If a room is pre-selected, filter rooms by that room's type
+        if ($selectedRoomId) {
+            $selectedRoom = \App\Room::findOrFail($selectedRoomId);
+            $roomType = $selectedRoom->room_type;
+            $rooms = \App\Room::where('room_type', $roomType)
+                              ->where('status', '!=', 'Under Maintenance')
+                              ->get();
+        } else {
+            // Load available rooms (exclude Under Maintenance rooms)
+            $rooms = \App\Room::where('status', '!=', 'Under Maintenance')->get();
+        }
         
         // Get booked dates for the selected room if provided
         $bookedDates = [];
@@ -88,7 +126,7 @@ class BookingController extends Controller
     $room = Room::findOrFail($data['room_id']);
     $room->update(['status' => 'Booked']);
 
-    return redirect()->route('rooms.index')
+    return redirect()->route('bookings.index')
                      ->with('success','Booking confirmed.');
     }
 
@@ -217,7 +255,7 @@ class BookingController extends Controller
             'status' => 'Available'
         ]);
 
-        return redirect()->route('bookings.status')
+        return redirect()->route('bookings.index')
                      ->with('success', 'Guest checked out successfully. Booking marked as completed and room is now available.');
     }
 }
