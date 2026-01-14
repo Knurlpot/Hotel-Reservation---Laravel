@@ -16,31 +16,68 @@ class BookingController extends Controller
     public function index()
     {
         $today = Carbon::now()->toDateString();
+        $search = request()->input('search', '');
         
         // Displays reservations (Booked bookings) - those who booked in advance and arriving today or later
         $reservations = Booking::with(['room', 'account'])
                                ->where('status', 'Booked')
-                               ->whereDate('check_in_date', '>=', $today)
-                               ->orderBy('check_in_date', 'asc')
-                               ->get();
+                               ->whereDate('check_in_date', '>=', $today);
+        
+        if ($search) {
+            $reservations = $reservations->where(function($query) use ($search) {
+                $query->where('guest_name', 'like', '%' . $search . '%')
+                      ->orWhereHas('room', function($q) use ($search) {
+                          $q->where('room_number', 'like', '%' . $search . '%');
+                      });
+            });
+        }
+        
+        $reservations = $reservations->orderBy('check_in_date', 'asc')->get();
         
         // Displays all booked transactions
         $booked = Booking::with(['room', 'account'])
-                        ->where('status', 'Booked')
-                        ->orderBy('check_in_date', 'asc')
-                        ->get();
+                        ->where('status', 'Booked');
+        
+        if ($search) {
+            $booked = $booked->where(function($query) use ($search) {
+                $query->where('guest_name', 'like', '%' . $search . '%')
+                      ->orWhereHas('room', function($q) use ($search) {
+                          $q->where('room_number', 'like', '%' . $search . '%');
+                      });
+            });
+        }
+        
+        $booked = $booked->orderBy('check_in_date', 'asc')->get();
         
         // Displays check-outs (Checked-In bookings) - those already checked in
         $checkouts = Booking::with(['room', 'account'])
-                            ->where('status', 'Checked-In')
-                            ->orderBy('check_out_date', 'asc')
-                            ->get();
+                            ->where('status', 'Checked-In');
+        
+        if ($search) {
+            $checkouts = $checkouts->where(function($query) use ($search) {
+                $query->where('guest_name', 'like', '%' . $search . '%')
+                      ->orWhereHas('room', function($q) use ($search) {
+                          $q->where('room_number', 'like', '%' . $search . '%');
+                      });
+            });
+        }
+        
+        $checkouts = $checkouts->orderBy('check_out_date', 'asc')->get();
         
         // Displays completed bookings
         $completed = Booking::with(['room', 'account'])
-                           ->where('status', 'Completed')
-                           ->orderBy('check_out_date', 'desc')
-                           ->get();
+                           ->where('status', 'Completed');
+        
+        if ($search) {
+            $completed = $completed->where(function($query) use ($search) {
+                $query->where('guest_name', 'like', '%' . $search . '%')
+                      ->orWhereHas('room', function($q) use ($search) {
+                          $q->where('room_number', 'like', '%' . $search . '%');
+                      });
+            });
+        }
+        
+        $completed = $completed->orderBy('check_out_date', 'desc')->get();
         
         // Get one room of each type for the room cards
         $singleRoom = Room::where('room_type', 'Single')->first();

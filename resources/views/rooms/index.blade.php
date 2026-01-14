@@ -22,6 +22,7 @@
             <img src="{{ asset('images/single.jpg') }}">
             <div class="overlay">
                 <h3>Single</h3>
+                <p style="font-size: 14px; margin-top: 5px;">₱{{ number_format($singleRoom->price ?? 0, 0) }} <span style="font-size: 12px;">/night</span></p>
             </div>
         </a>
 
@@ -30,6 +31,7 @@
             <img src="{{ asset('images/double.jpg') }}">
             <div class="overlay">
                 <h3>Double</h3>
+                <p style="font-size: 14px; margin-top: 5px;">₱{{ number_format($doubleRoom->price ?? 0, 0) }} <span style="font-size: 12px;">/night</span></p>
             </div>
         </a>
 
@@ -38,6 +40,7 @@
             <img src="{{ asset('images/suite.jpg') }}">
             <div class="overlay">
                 <h3>Suite</h3>
+                <p style="font-size: 14px; margin-top: 5px;">₱{{ number_format($suiteRoom->price ?? 0, 0) }} <span style="font-size: 12px;">/night</span></p>
             </div>
         </a>
 

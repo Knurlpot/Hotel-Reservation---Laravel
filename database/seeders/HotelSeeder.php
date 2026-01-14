@@ -37,7 +37,7 @@ class HotelSeeder extends Seeder
 
         // 3. Create Sample Rooms
         $room1 = Room::create(['room_number' => '101', 'room_type' => 'Single', 'price' => 1500.00, 'status' => 'Available']);
-        $room2 = Room::create(['room_number' => '102', 'room_type' => 'Double', 'price' => 1500.00, 'status' => 'Available']);
+        $room2 = Room::create(['room_number' => '102', 'room_type' => 'Double', 'price' => 2200.00, 'status' => 'Available']);
         $room3 = Room::create(['room_number' => '103', 'room_type' => 'Single', 'price' => 1500.00, 'status' => 'Available']);
         $room4 = Room::create(['room_number' => '104', 'room_type' => 'Suite', 'price' => 3000.00, 'status' => 'Available']);
         $room5 = Room::create(['room_number' => '105', 'room_type' => 'Single', 'price' => 1500.00, 'status' => 'Available']);

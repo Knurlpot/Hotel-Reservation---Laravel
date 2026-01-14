@@ -10,12 +10,6 @@
     </div>
 </section>
 
-{{-- SEARCH --}}
-<div class="reception-search">
-    <input type="text" placeholder="Search Guests & Rooms">
-    <button>Search</button>
-</div>
-
 {{-- ROOMS AVAILABLE --}}
 <section class="reception-section">
     <small>Rooms Available</small>
@@ -52,6 +46,20 @@
                 <p style="margin-top: 15px; font-size: 13px; font-weight: 600;">Book Now ></p>
             </div>
         </a>
+
+    </div>
+</section>
+
+{{-- SEARCH --}}
+<div class="reception-search">
+    <form method="GET" action="{{ route('bookings.index') }}" style="display: flex; gap: 10px; width: 100%;">
+        <input type="text" name="search" placeholder="Search Guests & Rooms" value="{{ request()->input('search', '') }}" style="flex: 1;">
+        <button type="submit">Search</button>
+        @if(request()->input('search'))
+            <a href="{{ route('bookings.index') }}" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer; text-decoration: none; font-weight: 600;">Clear</a>
+        @endif
+    </form>
+</div>
 
     </div>
 </section>
@@ -125,12 +133,12 @@
                     <td>₱{{ number_format($booking->total_amount ?? 0, 0) }}</td>
                     <td>
                         <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                            <a href="{{ route('bookings.edit', $booking->booking_id) }}" class="btn-edit" style="display: inline-block; padding: 6px 10px; font-size: 10px; background: #ffc107; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; text-decoration: none; transition: background 0.3s ease;" onmouseover="this.style.background='#e0a800'" onmouseout="this.style.background='#ffc107'">EDIT</a>
                             <form action="{{ route('bookings.checkin', $booking->booking_id) }}" method="POST" style="display: inline;">
                                 @csrf
                                 @method('PATCH')
                                 <button type="submit" class="btn-primary">CHECK IN</button>
                             </form>
+                            <a href="{{ route('bookings.edit', $booking->booking_id) }}" class="btn-edit" style="display: inline-block; padding: 6px 10px; font-size: 10px; background: #ffc107; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; text-decoration: none; transition: background 0.3s ease;" onmouseover="this.style.background='#e0a800'" onmouseout="this.style.background='#ffc107'">EDIT</a>
                         </div>
                     </td>
                 </tr>
