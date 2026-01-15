@@ -150,7 +150,7 @@
 
             <div style="display: flex; gap: 15px; margin-top: auto;">
                 <button type="submit" class="btn-primary">Confirm Booking</button>
-                <a href="{{ route('bookings.index') }}" style="background: #6c757d; color: #fff; padding: 10px 18px; border-radius: 6px; border: none; font-size: 12px; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-block; transition: background 0.3s ease;" onmouseover="this.style.background='#5a6268'" onmouseout="this.style.background='#6c757d'">Back to Bookings</a>
+                <a href="{{ route('bookings.status') }}" style="background: #6c757d; color: #fff; padding: 10px 18px; border-radius: 6px; border: none; font-size: 12px; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-block; transition: background 0.3s ease;" onmouseover="this.style.background='#5a6268'" onmouseout="this.style.background='#6c757d'">Back to Bookings</a>
             </div>
         </form>
 

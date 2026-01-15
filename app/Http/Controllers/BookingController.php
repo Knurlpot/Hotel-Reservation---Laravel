@@ -163,7 +163,7 @@ class BookingController extends Controller
     $room = Room::findOrFail($data['room_id']);
     $room->update(['status' => 'Booked']);
 
-    return redirect()->route('bookings.index')
+    return redirect()->route('bookings.status')
                      ->with('success','Booking confirmed.');
     }
 
@@ -223,8 +223,14 @@ class BookingController extends Controller
 
         $booking->update($request->all());
 
-        return redirect()->route('bookings.index')
-                     ->with('success', 'Booking updated successfully');
+        if (auth()->user()->role == 'Admin') {
+            return redirect()->route('bookings.status')
+                         ->with('success', 'Booking updated successfully');
+        } else {
+            return redirect()->route('bookings.index')
+                         ->with('success', 'Booking updated successfully')
+                         ->withFragment('reservations');
+        }
     }
 
     /**
