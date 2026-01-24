@@ -92,12 +92,12 @@ The application will be available at `http://127.0.0.1:8000`
 After seeding, use these credentials to login:
 
 **Admin Account:**
-- Email: admin@example.com
-- Password: password
+- Email: admin@hotel.com
+- Password: password123
 
 **Receptionist Account:**
-- Email: receptionist@example.com
-- Password: password
+- Email: jane@hotel.com
+- Password: password123
 
 ## User Workflows
 
